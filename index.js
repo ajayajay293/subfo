@@ -3,7 +3,7 @@ const axios = require('axios');
 const crypto = require('crypto');
 
 // --- KONFIGURASI UTAMA ---
-const token = '8302488902:AAHaD_W255L-Y5miqv3ogE-SpyY4EpUxXtw';
+const token = '8302488902:AAGCOhFosHzk1oToCT43zulDJjRCFptq6hY';
 const bot = new TelegramBot(token, { polling: true });
 
 const SETTINGS = {
