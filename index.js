@@ -177,83 +177,78 @@ bot.on('callback_query', async (query) => {
 
     if (data === "buy_premium") {
     await bot.answerCallbackQuery(query.id, {
-        text: "⌛ ɢᴇɴᴇʀᴀᴛɪɴɢ ᴘᴀʏᴍᴇɴᴛ..."
+        text: "⌛ Generating payment..."
     });
 
     try {
         const reff_id = `PREM-${Date.now()}`;
 
-        // ===== CREATE DEPOSIT QRIS =====
-        const body = new URLSearchParams({
-            api_key: SETTINGS.atlanticKey,
-            reff_id: reff_id,
-            nominal: SETTINGS.price,
-            type: "ewallet",
-            metode: "qris"
-        }).toString();
-
+        // ===== CREATE DEPOSIT =====
         const res = await axios.post(
-            "https://www.atlantich2h.com/deposit/create",
-            body,
-            { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+            "https://atlantich2h.com/deposit/create",
+            `api_key=${SETTINGS.atlanticKey}&reff_id=${reff_id}&nominal=${SETTINGS.price}&type=ewallet&metode=qris`,
+            {
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                timeout: 15000
+            }
         );
 
         // VALIDASI RESPONSE
-        if (!res.data || !res.data.status || !res.data.data) {
-            return bot.sendMessage(chatId, "❌ Gagal membuat pembayaran (response kosong).");
+        if (!res.data || res.data.status !== true) {
+            console.log("CREATE RESPONSE:", res.data);
+            return bot.sendMessage(chatId, "❌ Gagal membuat pembayaran (API error).");
         }
 
         const dep = res.data.data;
 
-        if (!dep.qr_string && !dep.qr_image) {
-            return bot.sendMessage(chatId, "❌ QRIS tidak tersedia, coba lagi.");
-        }
-
-        const qrData = dep.qr_string || dep.qr_image;
+        // ===== QR STRING → QR IMAGE =====
+        const qrData = dep.qr_string;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`;
 
         try { await bot.deleteMessage(chatId, msgId); } catch {}
 
-        // ===== SEND QR + DETAIL =====
+        // ===== SEND PAYMENT DETAIL =====
         await bot.sendPhoto(chatId, qrUrl, {
-            caption: `<blockquote>💳 <b>ᴘᴇᴍʙᴀʏᴀʀᴀɴ ǫʀɪs ᴘʀᴇᴍɪᴜᴍ</b>
+            caption: `<blockquote>💳 <b>PEMBAYARAN QRIS PREMIUM</b>
 
-🆔 <b>ID Deposit</b> : <code>${dep.id}</code>
-💰 <b>Nominal</b> : <b>Rp ${Number(dep.nominal).toLocaleString("id-ID")}</b>
-📦 <b>Paket</b> : Premium User
-⌛ <b>Status</b> : Pending
-🕒 <b>Waktu</b> : ${new Date().toLocaleString("id-ID")}
+🆔 ID Deposit : <code>${dep.id}</code>
+🧾 Reff ID : <code>${dep.reff_id}</code>
+💰 Nominal : <b>Rp ${Number(dep.nominal).toLocaleString("id-ID")}</b>
+💸 Fee : Rp ${Number(dep.fee).toLocaleString("id-ID")}
+📥 Diterima : Rp ${Number(dep.get_balance).toLocaleString("id-ID")}
+⌛ Status : Pending
+🕒 Dibuat : ${dep.created_at}
 
 Silakan scan QRIS di atas.
-Premium akan aktif otomatis setelah pembayaran berhasil.</blockquote>`,
+Premium aktif otomatis setelah pembayaran berhasil.</blockquote>`,
             parse_mode: "HTML",
             reply_markup: {
-                inline_keyboard: [[
-                    { text: "❌ Batalkan", callback_data: "start_back" }
-                ]]
+                inline_keyboard: [
+                    [{ text: "🔄 Cek Status", callback_data: `cek_${dep.id}` }],
+                    [{ text: "❌ Batalkan", callback_data: `cancel_${dep.id}` }]
+                ]
             }
         });
 
-        // ===== AUTO CHECK STATUS =====
+        // ===== AUTO CEK STATUS TIAP 2 DETIK =====
         let instantCalled = false;
 
         const checker = setInterval(async () => {
             try {
-                const cek = await axios.post(
-                    "https://www.atlantich2h.com/deposit/status",
-                    new URLSearchParams({
-                        api_key: SETTINGS.atlanticKey,
-                        id: dep.id
-                    }).toString(),
+                const st = await axios.post(
+                    "https://atlantich2h.com/deposit/status",
+                    `api_key=${SETTINGS.atlanticKey}&id=${dep.id}`,
                     { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
                 );
 
-                if (!cek.data || !cek.data.status) return;
+                if (!st.data || !st.data.status) return;
 
-                const payStatus = cek.data.data.status;
+                const status = st.data.data.status;
 
-                // === SUCCESS ===
-                if (payStatus === "success") {
+                // SUCCESS
+                if (status === "success") {
                     clearInterval(checker);
 
                     if (!db.premium.includes(userId)) {
@@ -264,40 +259,36 @@ Premium akan aktif otomatis setelah pembayaran berhasil.</blockquote>`,
                     return bot.sendMessage(chatId,
                         `<blockquote>✅ <b>PEMBAYARAN BERHASIL</b>
 
-Akses Premium telah aktif 🎉
-Silakan gunakan fitur <b>Create Subdomain</b>.</blockquote>`,
+Premium kamu telah aktif 🎉
+Silakan gunakan fitur Create Subdomain.</blockquote>`,
                         { parse_mode: "HTML" }
                     );
                 }
 
-                // === PROCESSING → INSTANT ===
-                if (payStatus === "processing" && !instantCalled) {
+                // PROCESSING → INSTANT
+                if (status === "processing" && !instantCalled) {
                     instantCalled = true;
 
                     await axios.post(
-                        "https://www.atlantich2h.com/deposit/instant",
-                        new URLSearchParams({
-                            api_key: SETTINGS.atlanticKey,
-                            id: dep.id,
-                            action: "true"
-                        }).toString(),
+                        "https://atlantich2h.com/deposit/instant",
+                        `api_key=${SETTINGS.atlanticKey}&id=${dep.id}&action=true`,
                         { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
                     );
 
-                    console.log("[INSTANT TRIGGERED]", dep.id);
+                    console.log("INSTANT TRIGGERED:", dep.id);
                 }
 
-            } catch (err) {
-                console.log("CHECK ERROR:", err.message);
+            } catch (e) {
+                console.log("STATUS CHECK ERROR:", e.message);
             }
-        }, 3000);
+        }, 2000);
 
-        // STOP CHECKER 10 MENIT
+        // STOP AFTER 10 MIN
         setTimeout(() => clearInterval(checker), 600000);
 
     } catch (err) {
-        console.log("CREATE ERROR:", err.message);
-        bot.sendMessage(chatId, "❌ Gagal membuat pembayaran. Cek API / koneksi.");
+        console.log("CREATE ERROR:", err.response?.data || err.message);
+        bot.sendMessage(chatId, "❌ Gagal membuat pembayaran. Periksa API Key / koneksi.");
     }
 }
 
