@@ -294,6 +294,86 @@ Silakan gunakan fitur Create Subdomain.</blockquote>`,
     }
 }
 
+   if (!query.data.startsWith("cancel_")) return;
+
+    const depId = query.data.split("_")[1];
+    const chatId = query.message.chat.id;
+    const userId = query.from.id;
+
+    try {
+        const res = await axios.post(
+            "https://atlantich2h.com/deposit/cancel",
+            `api_key=${SETTINGS.atlanticKey}&id=${depId}`,
+            { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+        );
+
+        if (!res.data || !res.data.status) {
+            return bot.answerCallbackQuery(query.id, {
+                text: "❌ Gagal membatalkan",
+                show_alert: true
+            });
+        }
+
+        // STOP AUTO CHECK
+        if (paymentChecker[userId]) {
+            clearInterval(paymentChecker[userId]);
+            delete paymentChecker[userId];
+        }
+
+        await bot.editMessageCaption(
+            `<blockquote>❌ <b>PEMBAYARAN DIBATALKAN</b>
+
+ID Deposit: <code>${depId}</code>
+Status: Cancelled</blockquote>`,
+            {
+                chat_id: chatId,
+                message_id: query.message.message_id,
+                parse_mode: "HTML"
+            }
+        );
+
+        bot.answerCallbackQuery(query.id, { text: "Pembayaran dibatalkan" });
+
+    } catch (e) {
+        bot.answerCallbackQuery(query.id, {
+            text: "❌ Error cancel",
+            show_alert: true
+        });
+    }
+
+    if (!query.data.startsWith("cek_")) return;
+
+    const depId = query.data.split("_")[1];
+    const chatId = query.message.chat.id;
+
+    try {
+        const res = await axios.post(
+            "https://atlantich2h.com/deposit/status",
+            `api_key=${SETTINGS.atlanticKey}&id=${depId}`,
+            { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+        );
+
+        if (!res.data || !res.data.status) {
+            return bot.answerCallbackQuery(query.id, {
+                text: "❌ Gagal cek status",
+                show_alert: true
+            });
+        }
+
+        const d = res.data.data;
+
+        bot.answerCallbackQuery(query.id, {
+            text: `Status: ${d.status.toUpperCase()}\nNominal: Rp ${Number(d.nominal).toLocaleString("id-ID")}`,
+            show_alert: true
+        });
+
+    } catch (e) {
+        bot.answerCallbackQuery(query.id, {
+            text: "❌ Error cek status",
+            show_alert: true
+        });
+    }
+
     if (data.startsWith("exec_subdo_")) {
         const [_, index, host, ip] = data.split("|");
         const tld = Object.keys(global.subdomain)[index];
@@ -398,68 +478,6 @@ bot.onText(/\/broadcast$/, async (msg) => {
         `<blockquote>✅ <b>Broadcast Selesai</b>\n\n📨 Berhasil: ${success}\n❌ Gagal: ${failed}</blockquote>`,
         { parse_mode: 'HTML' }
     );
-});
-
-bot.action(/^cek_(.+)$/, async (ctx) => {
-    const depId = ctx.match[1];
-
-    try {
-        const res = await axios.post(
-            "https://atlantich2h.com/deposit/status",
-            `api_key=${SETTINGS.atlanticKey}&id=${depId}`,
-            { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
-        );
-
-        if (!res.data.status) {
-            return ctx.answerCbQuery("❌ Gagal cek status", { show_alert: true });
-        }
-
-        const d = res.data.data;
-
-        await ctx.answerCbQuery(
-            `Status: ${d.status.toUpperCase()}\nNominal: Rp ${Number(d.nominal).toLocaleString("id-ID")}`,
-            { show_alert: true }
-        );
-
-    } catch (e) {
-        ctx.answerCbQuery("❌ Error cek status", { show_alert: true });
-    }
-});
-
-bot.action(/^cancel_(.+)$/, async (ctx) => {
-    const depId = ctx.match[1];
-    const userId = ctx.from.id;
-
-    try {
-        const res = await axios.post(
-            "https://atlantich2h.com/deposit/cancel",
-            `api_key=${SETTINGS.atlanticKey}&id=${depId}`,
-            { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
-        );
-
-        if (!res.data.status) {
-            return ctx.answerCbQuery("❌ Gagal membatalkan", { show_alert: true });
-        }
-
-        // STOP AUTO CHECK
-        if (paymentChecker[userId]) {
-            clearInterval(paymentChecker[userId]);
-            delete paymentChecker[userId];
-        }
-
-        await ctx.editMessageCaption(
-            `<blockquote>❌ <b>PEMBAYARAN DIBATALKAN</b>
-
-ID Deposit: <code>${depId}</code>
-Status: Cancelled</blockquote>`,
-            { parse_mode: "HTML" }
-        );
-
-        ctx.answerCbQuery("Pembayaran dibatalkan");
-
-    } catch (e) {
-        ctx.answerCbQuery("❌ Error cancel", { show_alert: true });
-    }
 });
 
 bot.onText(/\/addprem (.+)/, (msg, match) => {
