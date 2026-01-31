@@ -1,0 +1,32 @@
+{
+  "name": "subdo-bot-premium",
+  "version": "1.0.0",
+  "description": "Bot Telegram Subdomain & VPS Installer with Auto Payment",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "subdomain",
+    "cloudflare",
+    "atlantic-h2h",
+    "ssh2",
+    "pterodactyl"
+  ],
+  "author": "NaelDev",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.7",
+    "node-telegram-bot-api": "^0.64.0",
+    "ssh2": "^1.15.0",
+    "crypto": "^1.0.1",
+    "fs-extra": "^11.2.0",
+    "path": "^0.12.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
+  }
+}
