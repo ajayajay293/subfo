@@ -1,25 +1,23 @@
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
 const crypto = require('crypto');
-const fs = require('fs');
 
-// --- KONFIGURASI ---
-const token = '8302488902:AAGCOhFosHzk1oToCT43zulDJjRCFptq6hY';
+// --- KONFIGURASI UTAMA ---
+const token = '8302488902:AAHaD_W255L-Y5miqv3ogE-SpyY4EpUxXtw';
 const bot = new TelegramBot(token, { polling: true });
 
 const SETTINGS = {
-    ownerId: 8457401920, // ID Telegram Kamu
+    ownerId: 8457401920,
     dev: "NaelDev",
     atlanticKey: "cIr6yFSfNiCtzfOw50IIb8xvviGlG4U9o7wLe60Pvrz9os0Ff0ARoAMKdNj7YyqVYi25YtfQoyGVlPo8ce3wAuawklZJlqJF6mmN",
-    price: 5500, // Harga 5k + Admin 500
-    channels: ["@PanelStorez", "@FajarGanteng", "@zCekID"]
+    price: 5500,
+    channels: ["@OrderOTP", "@FajarGanteng", "@zCekID"]
 };
 
-// --- DATABASE INTERNAL (TANPA GITHUB) ---
+// --- DATABASE INTERNAL ---
 let db = { 
     users: {}, 
-    deposits: [], 
-    premium: [8457401920] // Owner otomatis premium
+    premium: [8457401920] 
 };
 
 global.subdomain = { 
@@ -34,48 +32,43 @@ global.subdomain = {
 };
 
 const userStates = new Map();
-
-// --- UTILS ---
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// --- UI COMPONENTS ---
+const getMainMenu = (userId) => ({
+    inline_keyboard: [
+        [{ text: "🚀 ᴄʀᴇᴀᴛᴇ ꜱᴜʙᴅᴏᴍᴀɪɴ", callback_data: "menu_create" }],
+        [{ text: "💳 ʙᴇʟɪ ᴀᴋꜱᴇꜱ ᴘʀᴇᴍɪᴜᴍ", callback_data: "buy_premium" }],
+        [{ text: "👤 ᴍʏ ᴘʀᴏꜰɪʟᴇ", callback_data: "my_profile" }, { text: "👑 ᴏᴡɴᴇʀ", callback_data: "owner_info" }],
+        ...(userId === SETTINGS.ownerId ? [[{ text: "⚙️ ᴏᴡɴᴇʀ ᴅᴀꜱʜʙᴏᴀʀᴅ", callback_data: "owner_menu" }]] : [])
+    ]
+});
+
+// --- CORE FUNCTIONS ---
 async function checkSub(msg) {
     for (const channel of SETTINGS.channels) {
         try {
             const chat = await bot.getChatMember(channel, msg.from.id);
-            if (chat.status === 'left' || chat.status === 'kicked') return false;
-        } catch (e) { return false; }
+            if (['left', 'kicked'].includes(chat.status)) return false;
+        } catch { return false; }
     }
     return true;
 }
 
-const getMainMenu = (userId) => {
-    const buttons = [
-        [{ text: "🚀 Create Subdomain", callback_data: "menu_create" }],
-        [{ text: "💳 Beli Akses Premium", callback_data: "buy_premium" }],
-        [{ text: "👤 Profile", callback_data: "my_profile" }]
-    ];
-    if (userId === SETTINGS.ownerId) {
-        buttons.push([{ text: "⚙️ Owner Menu", callback_data: "owner_menu" }]);
-    }
-    return { inline_keyboard: buttons };
-};
-
 // --- COMMANDS ---
-
 bot.onText(/\/start/, async (msg) => {
     const isSub = await checkSub(msg);
     if (!isSub) {
-        return bot.sendMessage(msg.chat.id, `<blockquote>❌ Akses Ditolak!\n\nAnda harus bergabung ke channel sponsor kami terlebih dahulu:\n1. ${SETTINGS.channels.join('\n2. ')}</blockquote>`, {
+        return bot.sendMessage(msg.chat.id, `<blockquote>⚠️ <b>ᴀᴋꜱᴇꜱ ᴅɪᴛᴏʟᴀᴋ</b>\n\nꜱɪʟᴀʜᴋᴀɴ ʙᴇʀɢᴀʙᴜɴɢ ᴋᴇ ᴄʜᴀɴɴᴇʟ ꜱᴘᴏɴꜱᴏʀ ᴜɴᴛᴜᴋ ᴍᴇɴɢɢᴜɴᴀᴋᴀɴ ʙᴏᴛ:\n\n${SETTINGS.channels.join('\n')}</blockquote>`, {
             parse_mode: 'HTML',
-            reply_markup: { inline_keyboard: [[{ text: "Cek Status Gabung", callback_data: "check_sub" }]] }
+            reply_markup: { inline_keyboard: [[{ text: "✅ ᴄᴇᴋ ꜱᴛᴀᴛᴜꜱ ɢᴀʙᴜɴɢ", callback_data: "start_back" }]] }
         });
     }
 
-    // Catat user ke database internal
-    if (!db.users[msg.from.id]) db.users[msg.from.id] = { name: msg.from.first_name };
+    if (!db.users[msg.from.id]) db.users[msg.from.id] = { name: msg.from.first_name, date: new Date() };
 
     const videoUrl = "https://files.catbox.moe/b6ykx3.mp4";
-    const teks = `<blockquote>✨ SELAMAT DATANG DI SUBDO BOT ✨\n\nLayanan pembuatan subdomain otomatis dan permanen.\n\n⚠️ <b>S&K:</b>\n- Dilarang spam bot.\n- Subdomain dilarang untuk phising.\n- Pembayaran 5k sekali bayar (Permanen).\n\nSilahkan pilih menu di bawah:</blockquote>`;
+    const teks = `<blockquote>✨ <b>ꜱᴜʙᴅᴏᴍᴀɪɴ ᴍᴀɴᴀɢᴇᴍᴇɴᴛ</b> ✨\n\nʟᴀʏᴀɴᴀɴ ᴘᴇᴍʙᴜᴀᴛᴀɴ ꜱᴜʙᴅᴏᴍᴀɪɴ ᴏᴛᴏᴍᴀᴛɪꜱ, ᴄᴇᴘᴀᴛ, ᴅᴀɴ ᴘᴇʀᴍᴀɴᴇɴ.\n\n📝 <b>ꜱʏᴀʀᴀᴛ & ᴋᴇᴛᴇɴᴛᴜᴀɴ:</b>\n├ ᴅɪʟᴀʀᴀɴɢ ꜱᴘᴀᴍ ʙᴏᴛ\n├ ᴅɪʟᴀʀᴀɴɢ ᴜɴᴛᴜᴋ ᴘʜɪꜱʜɪɴɢ\n└ ꜱᴇᴋᴀʟɪ ʙᴀʏᴀʀ ᴀᴋᴛɪꜰ ꜱᴇʟᴀᴍᴀɴʏᴀ\n\nꜱɪʟᴀʜᴋᴀɴ ᴘɪʟɪʜ ᴍᴇɴᴜ ᴅɪ ʙᴀᴡᴀʜ ɪɴɪ:</blockquote>`;
     
     bot.sendVideo(msg.chat.id, videoUrl, {
         caption: teks,
@@ -90,40 +83,44 @@ bot.on('callback_query', async (query) => {
     const data = query.data;
     const msgId = query.message.message_id;
 
-    // Fungsi refresh menu (Auto Delete)
     const refreshMenu = async (teks, kb) => {
-        try { await bot.deleteMessage(chatId, msgId); } catch (e) {}
+        try { await bot.deleteMessage(chatId, msgId); } catch {}
         return bot.sendMessage(chatId, teks, { parse_mode: 'HTML', reply_markup: kb });
     };
 
     if (data === "start_back") {
-        const teks = `<blockquote>✨ SELAMAT DATANG DI SUBDO BOT ✨\n\nSilahkan pilih menu di bawah:</blockquote>`;
+        const teks = `<blockquote>✨ <b>ᴍᴀɪɴ ᴍᴇɴᴜ ꜱᴜʙᴅᴏ ʙᴏᴛ</b> ✨\n\nꜱɪʟᴀʜᴋᴀɴ ᴘɪʟɪʜ ʟᴀʏᴀɴᴀɴ ʏᴀɴɢ ᴀɴᴅᴀ ɪɴɢɪɴᴋᴀɴ:</blockquote>`;
         return refreshMenu(teks, getMainMenu(userId));
     }
 
     if (data === "my_profile") {
         const isPrem = db.premium.includes(userId);
-        const teks = `<blockquote>👤 <b>PROFIL PENGGUNA</b>\n\nNama: ${query.from.first_name}\nID: <code>${userId}</code>\nStatus: ${isPrem ? "Premium ✨" : "Gratisan"}\n\nTerima kasih telah menggunakan layanan kami.</blockquote>`;
-        return refreshMenu(teks, { inline_keyboard: [[{ text: "⬅️ Kembali", callback_data: "start_back" }]] });
+        const teks = `<blockquote>👤 <b>ᴜꜱᴇʀ ᴘʀᴏꜰɪʟᴇ</b>\n\n📝 ɴᴀᴍᴇ: <b>${query.from.first_name}</b>\n🆔 ɪᴅ: <code>${userId}</code>\n🌟 ꜱᴛᴀᴛᴜꜱ: <b>${isPrem ? "ᴘʀᴇᴍɪᴜᴍ ✨" : "ꜰʀᴇᴇ ᴜꜱᴇʀ"}</b>\n\nᴛᴇʀɪᴍᴀ ᴋᴀꜱɪʜ ᴛᴇʟᴀʜ ᴍᴇɴɢɢᴜɴᴀᴋᴀɴ ʟᴀʏᴀɴᴀɴ ᴋᴀᴍɪ!</blockquote>`;
+        return refreshMenu(teks, { inline_keyboard: [[{ text: "⬅️ ᴋᴇᴍʙᴀʟɪ", callback_data: "start_back" }]] });
+    }
+
+    if (data === "owner_info") {
+        const teks = `<blockquote>👑 <b>ᴏᴡɴᴇʀ ɪɴꜰᴏʀᴍᴀᴛɪᴏɴ</b>\n\nᴅᴇᴠᴇʟᴏᴘᴇʀ: @${SETTINGS.dev}\nɪᴅ ᴏᴡɴᴇʀ: <code>${SETTINGS.ownerId}</code>\n\nʜᴜʙᴜɴɢɪ ᴏᴡɴᴇʀ ᴊɪᴋᴀ ᴛᴇʀᴊᴀᴅɪ ᴋᴇɴᴅᴀʟᴀ ᴘᴀᴅᴀ ᴛʀᴀɴꜱᴀᴋꜱɪ.</blockquote>`;
+        return refreshMenu(teks, { inline_keyboard: [[{ text: "⬅️ ᴋᴇᴍʙᴀʟɪ", callback_data: "start_back" }]] });
     }
 
     if (data === "owner_menu") {
-        if (userId !== SETTINGS.ownerId) return bot.answerCallbackQuery(query.id, { text: "Akses Ditolak!" });
-        const teks = `<blockquote>⚙️ <b>OWNER DASHBOARD</b>\n\nTotal User: ${Object.keys(db.users).length}\nTotal Premium: ${db.premium.length}\n\nLayanan berjalan normal.</blockquote>`;
-        return refreshMenu(teks, { inline_keyboard: [[{ text: "⬅️ Kembali", callback_data: "start_back" }]] });
+        if (userId !== SETTINGS.ownerId) return;
+        const teks = `<blockquote>⚙️ <b>ᴏᴡɴᴇʀ ᴅᴀꜱʜʙᴏᴀʀᴅ</b>\n\n📊 ꜱᴛᴀᴛɪꜱᴛɪᴋ ʙᴏᴛ:\n├ ᴛᴏᴛᴀʟ ᴜꜱᴇʀ: ${Object.keys(db.users).length}\n└ ᴛᴏᴛᴀʟ ᴘʀᴇᴍɪᴜᴍ: ${db.premium.length}\n\nᴜꜱᴇ <code>/addprem [id]</code> ᴛᴏ ᴀᴅᴅ ᴜꜱᴇʀ.</blockquote>`;
+        return refreshMenu(teks, { inline_keyboard: [[{ text: "⬅️ ᴋᴇᴍʙᴀʟɪ", callback_data: "start_back" }]] });
     }
 
     if (data === "menu_create") {
         if (!db.premium.includes(userId)) {
-            const errorTeks = `<blockquote>❌ Akses Ditolak!\n\nFitur ini khusus User Premium. Silahkan beli akses seharga Rp 5.500 (Termasuk Admin).</blockquote>`;
-            return refreshMenu(errorTeks, { inline_keyboard: [[{ text: "Beli Sekarang", callback_data: "buy_premium" }, { text: "Kembali", callback_data: "start_back" }]] });
+            const teks = `<blockquote>❌ <b>ᴀᴋꜱᴇꜱ ᴅɪᴛᴏʟᴀᴋ</b>\n\nꜰɪᴛᴜʀ ɪɴɪ ʜᴀɴʏᴀ ᴜɴᴛᴜᴋ ᴜꜱᴇʀ ᴘʀᴇᴍɪᴜᴍ.\nʜᴀʀɢᴀ ᴀᴋꜱᴇꜱ: <b>ʀᴘ ${SETTINGS.price.toLocaleString()}</b></blockquote>`;
+            return refreshMenu(teks, { inline_keyboard: [[{ text: "💳 ʙᴇʟɪ ᴘʀᴇᴍɪᴜᴍ", callback_data: "buy_premium" }], [{ text: "⬅️ ᴋᴇᴍʙᴀʟɪ", callback_data: "start_back" }]] });
         }
         userStates.set(chatId, { step: 'get_host' });
-        return refreshMenu(`<blockquote>⌨️ Masukkan Hostname yang diinginkan:\n(Contoh: serverganteng)</blockquote>`, { inline_keyboard: [[{ text: "❌ Batal", callback_data: "start_back" }]] });
+        return refreshMenu(`<blockquote>⌨️ <b>ɪɴᴘᴜᴛ ʜᴏꜱᴛɴᴀᴍᴇ</b>\n\nᴍᴀꜱᴜᴋᴋᴀɴ ʜᴏꜱᴛɴᴀᴍᴇ ʏᴀɴɢ ᴅɪɪɴɢɪɴᴋᴀɴ:\n(ᴄᴏɴᴛᴏʜ: <code>nael-hosting</code>)</blockquote>`, { inline_keyboard: [[{ text: "❌ ʙᴀᴛᴀʟᴋᴀɴ", callback_data: "start_back" }]] });
     }
 
     if (data === "buy_premium") {
-        bot.answerCallbackQuery(query.id, { text: "⏳ Menyiapkan QRIS..." });
+        bot.answerCallbackQuery(query.id, { text: "⌛ ɢᴇɴᴇʀᴀᴛɪɴɢ ᴘᴀʏᴍᴇɴᴛ..." });
         try {
             const reff_id = `PREM-${Date.now()}`;
             const res = await axios.post('https://atlantich2h.com/deposit/create', 
@@ -132,112 +129,87 @@ bot.on('callback_query', async (query) => {
             );
 
             if (res.data.status) {
-                const deposit = res.data.data;
-                const teks = `<blockquote>💳 <b>DETAIL PEMBAYARAN QRIS</b>\n\nID: <code>${deposit.id}</code>\nNominal: Rp ${deposit.nominal}\nStatus: PENDING\n\nSilahkan Scan QRIS di atas. Bot akan otomatis aktif.</blockquote>`;
+                const dep = res.data.data;
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(dep.qr_string || dep.qr_image)}`;
                 
-                try { await bot.deleteMessage(chatId, msgId); } catch (e) {}
-                await bot.sendPhoto(chatId, deposit.qr_image, {
-                    caption: teks,
+                try { await bot.deleteMessage(chatId, msgId); } catch {}
+                await bot.sendPhoto(chatId, qrUrl, {
+                    caption: `<blockquote>💳 <b>ᴘᴇᴍʙᴀʏᴀʀᴀɴ ǫʀɪs</b>\n\n🆔 ɪᴅ: <code>${dep.id}</code>\n💰 ᴛᴏᴛᴀʟ: <b>ʀᴘ ${dep.nominal.toLocaleString()}</b>\n⌛ ꜱᴛᴀᴛᴜꜱ: ᴘᴇɴᴅɪɴɢ\n\nꜱɪʟᴀʜᴋᴀɴ ꜱᴄᴀɴ ǫʀɪs ᴅɪ ᴀᴛᴀꜱ. ʙᴏᴛ ᴀᴋᴀɴ ᴏᴛᴏᴍᴀᴛɪꜱ ᴍᴇᴍʙᴇʀɪ ᴀᴋꜱᴇꜱ ꜱᴇᴛᴇʟᴀʜ ᴘᴇᴍʙᴀʏᴀʀᴀɴ ʙᴇʀʜᴀꜱɪʟ.</blockquote>`,
                     parse_mode: 'HTML',
-                    reply_markup: { inline_keyboard: [[{ text: "Batal", callback_data: "start_back" }]] }
+                    reply_markup: { inline_keyboard: [[{ text: "❌ ʙᴀᴛᴀʟᴋᴀɴ", callback_data: "start_back" }]] }
                 });
 
-                // Auto Check Loop
-                let attempts = 0;
-                const checkInterval = setInterval(async () => {
-                    attempts++;
-                    if (attempts > 120) return clearInterval(checkInterval); // Max 10 menit
-
-                    try {
-                        const statusRes = await axios.post('https://atlantich2h.com/deposit/status', 
-                            `api_key=${SETTINGS.atlanticKey}&id=${deposit.id}`,
-                            { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-                        );
-
-                        if (statusRes.data.data.status === 'success') {
-                            clearInterval(checkInterval);
-                            db.premium.push(userId);
-                            bot.sendMessage(chatId, "<blockquote>✅ PEMBAYARAN BERHASIL!\n\nSekarang anda adalah user Premium. Silahkan gunakan menu /start lagi.</blockquote>", { parse_mode: 'HTML' });
-                        }
-                    } catch (err) { console.log("Cek status error"); }
+                let check = setInterval(async () => {
+                    const st = await axios.post('https://atlantich2h.com/deposit/status', `api_key=${SETTINGS.atlanticKey}&id=${dep.id}`, { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+                    if (st.data.data.status === 'success') {
+                        clearInterval(check);
+                        db.premium.push(userId);
+                        bot.sendMessage(chatId, "<blockquote>✅ <b>ᴘᴇᴍʙᴀʏᴀʀᴀɴ ʙᴇʀʜᴀꜱɪʟ</b>\n\nꜱᴇʟᴀᴍᴀᴛ! ᴀɴᴅᴀ ꜱᴇᴋᴀʀᴀɴɢ ᴀᴅᴀʟᴀʜ ᴜꜱᴇʀ ᴘʀᴇᴍɪᴜᴍ. ꜱɪʟᴀʜᴋᴀɴ ɢᴜɴᴀᴋᴀɴ ꜰɪᴛᴜʀ ᴄʀᴇᴀᴛᴇ ꜱᴜʙᴅᴏᴍᴀɪɴ.</blockquote>", { parse_mode: 'HTML' });
+                    }
                 }, 5000);
+                setTimeout(() => clearInterval(check), 600000);
             }
-        } catch (e) { bot.sendMessage(chatId, "❌ Gagal membuat QRIS. Cek API Key Atlantic kamu."); }
+        } catch (e) { bot.sendMessage(chatId, "❌ ɢᴀɢᴀʟ ᴍᴇᴍʙᴜᴀᴛ ᴘᴇᴍʙᴀʏᴀʀᴀɴ. ᴄᴇᴋ ᴋᴏɴᴇᴋꜱɪ ᴀᴘɪ."); }
     }
 
     if (data.startsWith("exec_subdo_")) {
         const [_, index, host, ip] = data.split("|");
         const tld = Object.keys(global.subdomain)[index];
-        const config = global.subdomain[tld];
-
-        const anim = ["█▒▒▒▒▒▒▒▒▒10%", "███▒▒▒▒▒▒▒30%", "█████▒▒▒▒▒50%", "███████▒▒▒70%", "██████████100%"];
-        try { await bot.deleteMessage(chatId, msgId); } catch (e) {}
-        let liveMsg = await bot.sendMessage(chatId, "<blockquote>🚀 Memproses...</blockquote>", { parse_mode: 'HTML' });
+        const cfg = global.subdomain[tld];
+        const anim = ["⌛ 10%", "⏳ 30%", "⌛ 50%", "⏳ 80%", "✅ 100%"];
+        
+        try { await bot.deleteMessage(chatId, msgId); } catch {}
+        let l = await bot.sendMessage(chatId, "<blockquote>🚀 <b>ꜱᴛᴀʀᴛɪɴɢ ᴘʀᴏᴄᴇꜱꜱ...</b></blockquote>", { parse_mode: 'HTML' });
 
         for (let a of anim) {
             await sleep(500);
-            await bot.editMessageText(`<blockquote>${a}\nSedang mendaftarkan DNS...</blockquote>`, { chat_id: chatId, message_id: liveMsg.message_id, parse_mode: 'HTML' });
+            await bot.editMessageText(`<blockquote>${a}\nᴅɴꜱ ʀᴇɢɪꜱᴛʀᴀᴛɪᴏɴ ɪɴ ᴘʀᴏɢʀᴇꜱꜱ...</blockquote>`, { chat_id: chatId, message_id: l.message_id, parse_mode: 'HTML' });
         }
 
         try {
-            const res = await axios.post(`https://api.cloudflare.com/client/v4/zones/${config.zone}/dns_records`, {
-                type: "A", name: `${host}.${tld}`, content: ip, ttl: 1, proxied: false
-            }, {
-                headers: { "Authorization": `Bearer ${config.apitoken}`, "Content-Type": "application/json" }
-            });
+            const res = await axios.post(`https://api.cloudflare.com/client/v4/zones/${cfg.zone}/dns_records`, 
+                { type: "A", name: `${host}.${tld}`, content: ip, ttl: 1, proxied: false },
+                { headers: { "Authorization": `Bearer ${cfg.apitoken}`, "Content-Type": "application/json" } }
+            );
 
             if (res.data.success) {
-                bot.editMessageText(`<blockquote>✅ <b>SUBDOMAIN BERHASIL!</b>\n\n🌐 Host: <code>${res.data.result.name}</code>\n📌 IP: <code>${res.data.result.content}</code>\n\nTerima kasih telah berlangganan!</blockquote>`, { 
-                    chat_id: chatId, 
-                    message_id: liveMsg.message_id, 
-                    parse_mode: 'HTML',
-                    reply_markup: { inline_keyboard: [[{ text: "Kembali Ke Menu", callback_data: "start_back" }]] }
+                bot.editMessageText(`<blockquote>✅ <b>ꜱᴜʙᴅᴏᴍᴀɪɴ ᴄʀᴇᴀᴛᴇᴅ!</b>\n\n🌐 ʜᴏꜱᴛ: <code>${res.data.result.name}</code>\n📌 ɪᴘ: <code>${res.data.result.content}</code>\n✨ ꜱᴛᴀᴛᴜꜱ: ᴀᴄᴛɪᴠᴇ\n\nᴛᴇʀɪᴍᴀ ᴋᴀꜱɪʜ ᴛᴇʟᴀʜ ᴍᴇɴɢɢᴜɴᴀᴋᴀɴ ᴊᴀꜱᴀ ᴋᴀᴍɪ!</blockquote>`, { 
+                    chat_id: chatId, message_id: l.message_id, parse_mode: 'HTML',
+                    reply_markup: { inline_keyboard: [[{ text: "🏠 ᴋᴇᴍʙᴀʟɪ ᴋᴇ ᴍᴇɴᴜ", callback_data: "start_back" }]] }
                 });
             }
-        } catch (e) {
-            bot.editMessageText("<blockquote>❌ Gagal! Domain sudah ada atau Cloudflare API Error.</blockquote>", { 
-                chat_id: chatId, 
-                message_id: liveMsg.message_id, 
-                parse_mode: 'HTML',
-                reply_markup: { inline_keyboard: [[{ text: "Coba Lagi", callback_data: "menu_create" }]] }
+        } catch {
+            bot.editMessageText("<blockquote>❌ <b>ᴘʀᴏᴄᴇꜱꜱ ꜰᴀɪʟᴇᴅ</b>\n\nʜᴏꜱᴛɴᴀᴍᴇ ꜱᴜᴅᴀʜ ᴀᴅᴀ ᴀᴛᴀᴜ ᴀᴘɪ ᴄʟᴏᴜᴅꜰʟᴀʀᴇ ᴇʀʀᴏʀ.</blockquote>", { 
+                chat_id: chatId, message_id: l.message_id, parse_mode: 'HTML',
+                reply_markup: { inline_keyboard: [[{ text: "🔄 ᴄᴏʙᴀ ʟᴀɢɪ", callback_data: "menu_create" }]] }
             });
         }
     }
 });
 
-// --- TEXT HANDLER ---
+// --- INPUT HANDLER ---
 bot.on('message', async (msg) => {
     if (!msg.text || msg.text.startsWith('/')) return;
     const chatId = msg.chat.id;
     const state = userStates.get(chatId);
 
-    if (state && state.step === 'get_host') {
+    if (state?.step === 'get_host') {
         state.host = msg.text.toLowerCase().replace(/[^a-z0-9]/g, '');
         state.step = 'get_ip';
         userStates.set(chatId, state);
-        bot.sendMessage(chatId, "<blockquote>📍 Masukkan IP Address (V4):\n(Contoh: 1.2.3.4)</blockquote>", { parse_mode: 'HTML' });
+        bot.sendMessage(chatId, "<blockquote>📍 <b>ɪɴᴘᴜᴛ ɪᴘ ᴀᴅᴅʀᴇꜱꜱ</b>\n\nᴍᴀꜱᴜᴋᴋᴀɴ ɪᴘ ᴠᴘꜱ ᴀɴᴅᴀ (ᴠ4):\n(ᴄᴏɴᴛᴏʜ: <code>1.1.1.1</code>)</blockquote>", { parse_mode: 'HTML' });
     } 
-    else if (state && state.step === 'get_ip') {
+    else if (state?.step === 'get_ip') {
         const ip = msg.text.trim();
-        const domains = Object.keys(global.subdomain);
-        const buttons = domains.map((d, i) => ([{ text: d, callback_data: `exec_subdo_|${i}|${state.host}|${ip}` }]));
-        
+        const btns = Object.keys(global.subdomain).map((d, i) => ([{ text: `🌐 ${d}`, callback_data: `exec_subdo_|${i}|${state.host}|${ip}` }]));
         userStates.delete(chatId);
-        bot.sendMessage(chatId, "<blockquote>🌐 Pilih Domain Utama:</blockquote>", {
-            parse_mode: 'HTML',
-            reply_markup: { inline_keyboard: buttons }
-        });
+        bot.sendMessage(chatId, "<blockquote>🌍 <b>ꜱᴇʟᴇᴄᴛ ᴅᴏᴍᴀɪɴ</b>\n\nᴘɪʟɪʜ ᴅᴏᴍᴀɪɴ ᴜᴛᴀᴍᴀ ʏᴀɴɢ ᴀᴋᴀɴ ᴅɪɢᴜɴᴀᴋᴀɴ:</blockquote>", { parse_mode: 'HTML', reply_markup: { inline_keyboard: btns } });
     }
 });
 
-// --- OWNER COMMANDS ---
 bot.onText(/\/addprem (.+)/, (msg, match) => {
     if (msg.from.id !== SETTINGS.ownerId) return;
-    const target = parseInt(match[1]);
-    if (!db.premium.includes(target)) db.premium.push(target);
-    bot.sendMessage(msg.chat.id, `<blockquote>✅ ID ${target} berhasil menjadi Premium.</blockquote>`, { parse_mode: 'HTML' });
-});
-
-bot.onText(/\/owner/, (msg) => {
-    bot.sendMessage(msg.chat.id, `<blockquote>👑 <b>OWNER INFO</b>\n\nDev: @${SETTINGS.dev}\nID: ${SETTINGS.ownerId}\n\nHubungi owner jika ada kendala deposit.</blockquote>`, { parse_mode: 'HTML' });
+    const id = parseInt(match[1]);
+    if (!db.premium.includes(id)) db.premium.push(id);
+    bot.sendMessage(msg.chat.id, `<blockquote>✅ ᴜꜱᴇʀ <code>${id}</code> ʙᴇʀʜᴀꜱɪʟ ᴅɪᴛᴀᴍʙᴀʜᴋᴀɴ ᴋᴇ ᴘʀᴇᴍɪᴜᴍ.</blockquote>`, { parse_mode: 'HTML' });
 });
