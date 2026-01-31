@@ -294,11 +294,8 @@ Silakan gunakan fitur Create Subdomain.</blockquote>`,
     }
 }
 
-   if (!query.data.startsWith("cancel_")) return;
-
-    const depId = query.data.split("_")[1];
-    const chatId = query.message.chat.id;
-    const userId = query.from.id;
+   if (data.startsWith("cancel_")) {
+    const depId = data.split("_")[1];
 
     try {
         const res = await axios.post(
@@ -307,14 +304,13 @@ Silakan gunakan fitur Create Subdomain.</blockquote>`,
             { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
         );
 
-        if (!res.data || !res.data.status) {
+        if (!res.data?.status) {
             return bot.answerCallbackQuery(query.id, {
                 text: "❌ Gagal membatalkan",
                 show_alert: true
             });
         }
 
-        // STOP AUTO CHECK
         if (paymentChecker[userId]) {
             clearInterval(paymentChecker[userId]);
             delete paymentChecker[userId];
@@ -323,28 +319,26 @@ Silakan gunakan fitur Create Subdomain.</blockquote>`,
         await bot.editMessageCaption(
             `<blockquote>❌ <b>PEMBAYARAN DIBATALKAN</b>
 
-ID Deposit: <code>${depId}</code>
-Status: Cancelled</blockquote>`,
+ID Deposit: <code>${depId}</code></blockquote>`,
             {
                 chat_id: chatId,
-                message_id: query.message.message_id,
+                message_id: msgId,
                 parse_mode: "HTML"
             }
         );
 
-        bot.answerCallbackQuery(query.id, { text: "Pembayaran dibatalkan" });
+        return bot.answerCallbackQuery(query.id, { text: "Pembayaran dibatalkan" });
 
     } catch (e) {
-        bot.answerCallbackQuery(query.id, {
+        return bot.answerCallbackQuery(query.id, {
             text: "❌ Error cancel",
             show_alert: true
         });
     }
+}
 
-    if (!query.data.startsWith("cek_")) return;
-
-    const depId = query.data.split("_")[1];
-    const chatId = query.message.chat.id;
+    if (data.startsWith("cek_")) {
+    const depId = data.split("_")[1];
 
     try {
         const res = await axios.post(
@@ -353,7 +347,7 @@ Status: Cancelled</blockquote>`,
             { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
         );
 
-        if (!res.data || !res.data.status) {
+        if (!res.data?.status) {
             return bot.answerCallbackQuery(query.id, {
                 text: "❌ Gagal cek status",
                 show_alert: true
@@ -362,17 +356,18 @@ Status: Cancelled</blockquote>`,
 
         const d = res.data.data;
 
-        bot.answerCallbackQuery(query.id, {
+        return bot.answerCallbackQuery(query.id, {
             text: `Status: ${d.status.toUpperCase()}\nNominal: Rp ${Number(d.nominal).toLocaleString("id-ID")}`,
             show_alert: true
         });
 
     } catch (e) {
-        bot.answerCallbackQuery(query.id, {
+        return bot.answerCallbackQuery(query.id, {
             text: "❌ Error cek status",
             show_alert: true
         });
     }
+}
 
     if (data.startsWith("exec_subdo_")) {
         const [_, index, host, ip] = data.split("|");
