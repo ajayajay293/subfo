@@ -61,6 +61,15 @@ async function checkSub(userId) {
     return true;
 }
 
+function grantPremium(userId) {
+    if (!db.premium.includes(userId)) {
+        db.premium.push(userId);
+        console.log(`User ${userId} sekarang Premium.`);
+        return true;
+    }
+    return false;
+}
+
 async function sendStartUI(chatId, userId, firstName) {
     const videoUrl = "https://files.catbox.moe/b6ykx3.mp4";
 
@@ -335,23 +344,26 @@ ID Deposit: <code>${depId}</code></blockquote>`,
 
     if (data.startsWith("cek_")) {
     const depId = data.split("_")[1];
+    try {
+        const res = await axios.post(
+            "https://atlantich2h.com/deposit/status",
+            `api_key=${SETTINGS.atlanticKey}&id=${depId}`,
+            { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+        );
 
-    const res = await axios.post(
-        "https://atlantich2h.com/deposit/status",
-        `api_key=${SETTINGS.atlanticKey}&id=${depId}`,
-        { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
-    );
+        const d = res.data.data;
+        if (d.status === "success") {
+            grantPremium(userId); // Sekarang tidak akan error karena fungsi sudah ada
+            bot.sendMessage(chatId, "✅ Pembayaran sukses! Anda sudah Premium.");
+        }
 
-    const d = res.data.data;
-
-    if (d.status === "success") {
-        grantPremium(userId);
+        return bot.answerCallbackQuery(query.id, {
+            text: `Status: ${d.status.toUpperCase()}`,
+            show_alert: true
+        });
+    } catch (e) {
+        bot.answerCallbackQuery(query.id, { text: "Gagal cek status" });
     }
-
-    return bot.answerCallbackQuery(query.id, {
-        text: `Status: ${d.status.toUpperCase()}`,
-        show_alert: true
-    });
 }
 
     if (data.startsWith("exec_subdo_")) {
