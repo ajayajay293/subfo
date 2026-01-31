@@ -333,6 +333,52 @@ bot.on('message', async (msg) => {
     }
 });
 
+bot.onText(/\/broadcast$/, async (msg) => {
+    // CEK OWNER
+    if (msg.from.id !== SETTINGS.ownerId) return;
+
+    // HARUS REPLY PESAN
+    if (!msg.reply_to_message) {
+        return bot.sendMessage(
+            msg.chat.id,
+            "<blockquote>⚠️ <b>Cara Broadcast</b>\n\nReply pesan yang ingin dibroadcast lalu ketik <code>/broadcast</code></blockquote>",
+            { parse_mode: 'HTML' }
+        );
+    }
+
+    const fromChatId = msg.chat.id;
+    const messageId = msg.reply_to_message.message_id;
+
+    let success = 0;
+    let failed = 0;
+
+    await bot.sendMessage(
+        msg.chat.id,
+        `<blockquote>📣 <b>Broadcast Dimulai</b>\n\n👥 Total user: ${Object.keys(db.users).length}</blockquote>`,
+        { parse_mode: 'HTML' }
+    );
+
+    for (const uid of Object.keys(db.users)) {
+        try {
+            await bot.forwardMessage(
+                Number(uid),
+                fromChatId,
+                messageId
+            );
+            success++;
+            await sleep(80); // anti flood
+        } catch (e) {
+            failed++;
+        }
+    }
+
+    bot.sendMessage(
+        msg.chat.id,
+        `<blockquote>✅ <b>Broadcast Selesai</b>\n\n📨 Berhasil: ${success}\n❌ Gagal: ${failed}</blockquote>`,
+        { parse_mode: 'HTML' }
+    );
+});
+
 bot.onText(/\/addprem (.+)/, (msg, match) => {
     if (msg.from.id !== SETTINGS.ownerId) return;
     const id = parseInt(match[1]);
