@@ -251,21 +251,17 @@ Premium aktif otomatis setelah pembayaran berhasil.</blockquote>`,
 
                 // SUCCESS
                 if (status === "success") {
-                    clearInterval(checker);
+    clearInterval(checker);
 
-                    if (!db.premium.includes(userId)) {
-                        db.premium.push(userId);
-                        fs.writeFileSync("./database.json", JSON.stringify(db, null, 2));
-                    }
+    grantPremium(userId);
 
-                    return bot.sendMessage(chatId,
-                        `<blockquote>✅ <b>PEMBAYARAN BERHASIL</b>
+    return bot.sendMessage(chatId,
+        `<blockquote>✅ <b>PEMBAYARAN BERHASIL</b>
 
-Premium kamu telah aktif 🎉
-Silakan gunakan fitur Create Subdomain.</blockquote>`,
-                        { parse_mode: "HTML" }
-                    );
-                }
+Premium kamu telah aktif 🎉</blockquote>`,
+        { parse_mode: "HTML" }
+    );
+}
 
                 // PROCESSING → INSTANT
                 if (status === "processing" && !instantCalled) {
@@ -340,33 +336,22 @@ ID Deposit: <code>${depId}</code></blockquote>`,
     if (data.startsWith("cek_")) {
     const depId = data.split("_")[1];
 
-    try {
-        const res = await axios.post(
-            "https://atlantich2h.com/deposit/status",
-            `api_key=${SETTINGS.atlanticKey}&id=${depId}`,
-            { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
-        );
+    const res = await axios.post(
+        "https://atlantich2h.com/deposit/status",
+        `api_key=${SETTINGS.atlanticKey}&id=${depId}`,
+        { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+    );
 
-        if (!res.data?.status) {
-            return bot.answerCallbackQuery(query.id, {
-                text: "❌ Gagal cek status",
-                show_alert: true
-            });
-        }
+    const d = res.data.data;
 
-        const d = res.data.data;
-
-        return bot.answerCallbackQuery(query.id, {
-            text: `Status: ${d.status.toUpperCase()}\nNominal: Rp ${Number(d.nominal).toLocaleString("id-ID")}`,
-            show_alert: true
-        });
-
-    } catch (e) {
-        return bot.answerCallbackQuery(query.id, {
-            text: "❌ Error cek status",
-            show_alert: true
-        });
+    if (d.status === "success") {
+        grantPremium(userId);
     }
+
+    return bot.answerCallbackQuery(query.id, {
+        text: `Status: ${d.status.toUpperCase()}`,
+        show_alert: true
+    });
 }
 
     if (data.startsWith("exec_subdo_")) {
