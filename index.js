@@ -8,7 +8,7 @@ const bot = new TelegramBot(token, { polling: true });
 
 const SETTINGS = {
     ownerId: 8457401920,
-    dev: "NaelDev",
+    dev: "IsJackA",
     atlanticKey: "cIr6yFSfNiCtzfOw50IIb8xvviGlG4U9o7wLe60Pvrz9os0Ff0ARoAMKdNj7YyqVYi25YtfQoyGVlPo8ce3wAuawklZJlqJF6mmN",
     price: 5500,
     channels: ["@Panelstorez", "@FajarGanteng", "@zCekID"]
@@ -172,7 +172,7 @@ bot.on('callback_query', async (query) => {
             return refreshMenu(teks, { inline_keyboard: [[{ text: "💳 ʙᴇʟɪ ᴘʀᴇᴍɪᴜᴍ", callback_data: "buy_premium" }], [{ text: "⬅️ ᴋᴇᴍʙᴀʟɪ", callback_data: "start_back" }]] });
         }
         userStates.set(chatId, { step: 'get_host' });
-        return refreshMenu(`<blockquote>⌨️ <b>ɪɴᴘᴜᴛ ʜᴏꜱᴛɴᴀᴍᴇ</b>\n\nᴍᴀꜱᴜᴋᴋᴀɴ ʜᴏꜱᴛɴᴀᴍᴇ ʏᴀɴɢ ᴅɪɪɴɢɪɴᴋᴀɴ:\n(ᴄᴏɴᴛᴏʜ: <code>nael-hosting</code>)</blockquote>`, { inline_keyboard: [[{ text: "❌ ʙᴀᴛᴀʟᴋᴀɴ", callback_data: "start_back" }]] });
+        return refreshMenu(`<blockquote>⌨️ <b>ɪɴᴘᴜᴛ ʜᴏꜱᴛɴᴀᴍᴇ</b>\n\nᴍᴀꜱᴜᴋᴋᴀɴ ʜᴏꜱᴛɴᴀᴍᴇ ʏᴀɴɢ ᴅɪɪɴɢɪɴᴋᴀɴ:\n(ᴄᴏɴᴛᴏʜ: <code>IsJackA-hosting</code>)</blockquote>`, { inline_keyboard: [[{ text: "❌ ʙᴀᴛᴀʟᴋᴀɴ", callback_data: "start_back" }]] });
     }
 
     if (data === "buy_premium") {
