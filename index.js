@@ -3,7 +3,7 @@ const axios = require('axios');
 const crypto = require('crypto');
 
 // --- KONFIGURASI UTAMA ---
-const token = '8302488902:AAGCOhFosHzk1oToCT43zulDJjRCFptq6hY';
+const token = '8302488902:AAH1rsZ2kHvSitGQN2lD7YMNWCeu9k0JAt0';
 const bot = new TelegramBot(token, { polling: true });
 
 const SETTINGS = {
@@ -59,6 +59,27 @@ async function checkSub(userId) {
     return true;
 }
 
+async function sendStartUI(chatId, userId, firstName) {
+    const videoUrl = "https://files.catbox.moe/b6ykx3.mp4";
+
+    const teks = `<blockquote>✨ <b>ꜱᴜʙᴅᴏᴍᴀɪɴ ᴍᴀɴᴀɢᴇᴍᴇɴᴛ</b> ✨
+
+ʟᴀʏᴀɴᴀɴ ᴘᴇᴍʙᴜᴀᴛᴀɴ ꜱᴜʙᴅᴏᴍᴀɪɴ ᴏᴛᴏᴍᴀᴛɪꜱ, ᴄᴇᴘᴀᴛ, ᴅᴀɴ ᴘᴇʀᴍᴀɴᴇɴ.
+
+📝 <b>ꜱʏᴀʀᴀᴛ & ᴋᴇᴛᴇɴᴛᴜᴀɴ:</b>
+├ ᴅɪʟᴀʀᴀɴɢ ꜱᴘᴀᴍ ʙᴏᴛ
+├ ᴅɪʟᴀʀᴀɴɢ ᴜɴᴛᴜᴋ ᴘʜɪꜱʜɪɴɢ
+└ ꜱᴇᴋᴀʟɪ ʙᴀʏᴀʀ ᴀᴋᴛɪꜰ ꜱᴇʟᴀᴍᴀɴʏᴀ
+
+ꜱɪʟᴀʜᴋᴀɴ ᴘɪʟɪʜ ᴍᴇɴᴜ ᴅɪ ʙᴀᴡᴀʜ ɪɴɪ:</blockquote>`;
+
+    return bot.sendVideo(chatId, videoUrl, {
+        caption: teks,
+        parse_mode: 'HTML',
+        reply_markup: getMainMenu(userId)
+    });
+}
+
 // --- COMMANDS ---
 bot.onText(/\/start/, async (msg) => {
     const isSub = await checkSub(msg.from.id);
@@ -69,7 +90,11 @@ bot.onText(/\/start/, async (msg) => {
         });
     }
 
-    if (!db.users[msg.from.id]) db.users[msg.from.id] = { name: msg.from.first_name, date: new Date() };
+    if (!db.users[msg.from.id]) {
+    db.users[msg.from.id] = { name: msg.from.first_name, date: new Date() };
+}
+
+return sendStartUI(msg.chat.id, msg.from.id, msg.from.first_name);
 
     const videoUrl = "https://files.catbox.moe/b6ykx3.mp4";
     const teks = `<blockquote>✨ <b>ꜱᴜʙᴅᴏᴍᴀɪɴ ᴍᴀɴᴀɢᴇᴍᴇɴᴛ</b> ✨\n\nʟᴀʏᴀɴᴀɴ ᴘᴇᴍʙᴜᴀᴛᴀɴ ꜱᴜʙᴅᴏᴍᴀɪɴ ᴏᴛᴏᴍᴀᴛɪꜱ, ᴄᴇᴘᴀᴛ, ᴅᴀɴ ᴘᴇʀᴍᴀɴᴇɴ.\n\n📝 <b>ꜱʏᴀʀᴀᴛ & ᴋᴇᴛᴇɴᴛᴜᴀɴ:</b>\n├ ᴅɪʟᴀʀᴀɴɢ ꜱᴘᴀᴍ ʙᴏᴛ\n├ ᴅɪʟᴀʀᴀɴɢ ᴜɴᴛᴜᴋ ᴘʜɪꜱʜɪɴɢ\n└ ꜱᴇᴋᴀʟɪ ʙᴀʏᴀʀ ᴀᴋᴛɪꜰ ꜱᴇʟᴀᴍᴀɴʏᴀ\n\nꜱɪʟᴀʜᴋᴀɴ ᴘɪʟɪʜ ᴍᴇɴᴜ ᴅɪ ʙᴀᴡᴀʜ ɪɴɪ:</blockquote>`;
@@ -103,25 +128,25 @@ bot.on('callback_query', async (query) => {
 
     // ===== START_BACK =====
     if (data === "start_back") {
-        if (!isSub) {
-            return bot.editMessageText(
-                `<blockquote>⚠️ <b>Akses Ditolak</b>\n\nJoin dulu:\n${SETTINGS.channels.join('\n')}</blockquote>`,
-                {
-                    chat_id: chatId,
-                    message_id: msgId,
-                    parse_mode: 'HTML',
-                    reply_markup: {
-                        inline_keyboard: [[
-                            { text: "✅ Cek Lagi", callback_data: "start_back" }
-                        ]]
-                    }
+    if (!isSub) {
+        return bot.editMessageText(
+            `<blockquote>⚠️ <b>Akses Ditolak</b>\n\nJoin dulu:\n${SETTINGS.channels.join('\n')}</blockquote>`,
+            {
+                chat_id: chatId,
+                message_id: msgId,
+                parse_mode: 'HTML',
+                reply_markup: {
+                    inline_keyboard: [[
+                        { text: "✅ Cek Lagi", callback_data: "start_back" }
+                    ]]
                 }
-            );
-        }
-
-        const teks = `<blockquote>✨ <b>ᴍᴀɪɴ ᴍᴇɴᴜ ꜱᴜʙᴅᴏ ʙᴏᴛ</b> ✨\n\nꜱɪʟᴀʜᴋᴀɴ ᴘɪʟɪʜ ʟᴀʏᴀɴᴀɴ ʏᴀɴɢ ᴀɴᴅᴀ ɪɴɢɪɴᴋᴀɴ:</blockquote>`;
-        return refreshMenu(teks, getMainMenu(userId));
+            }
+        );
     }
+
+    try { await bot.deleteMessage(chatId, msgId); } catch {}
+    return sendStartUI(chatId, userId, query.from.first_name);
+}
 
     // --- bawahnya lanjut menu lain ---
     if (data === "my_profile") {
@@ -151,37 +176,102 @@ bot.on('callback_query', async (query) => {
     }
 
     if (data === "buy_premium") {
-        bot.answerCallbackQuery(query.id, { text: "⌛ ɢᴇɴᴇʀᴀᴛɪɴɢ ᴘᴀʏᴍᴇɴᴛ..." });
-        try {
-            const reff_id = `PREM-${Date.now()}`;
-            const res = await axios.post('https://atlantich2h.com/deposit/create', 
-                `api_key=${SETTINGS.atlanticKey}&reff_id=${reff_id}&nominal=${SETTINGS.price}&type=ewallet&metode=qris`,
-                { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-            );
+    bot.answerCallbackQuery(query.id, { text: "⌛ ɢᴇɴᴇʀᴀᴛɪɴɢ ᴘᴀʏᴍᴇɴᴛ..." });
 
-            if (res.data.status) {
-                const dep = res.data.data;
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(dep.qr_string || dep.qr_image)}`;
-                
-                try { await bot.deleteMessage(chatId, msgId); } catch {}
-                await bot.sendPhoto(chatId, qrUrl, {
-                    caption: `<blockquote>💳 <b>ᴘᴇᴍʙᴀʏᴀʀᴀɴ ǫʀɪs</b>\n\n🆔 ɪᴅ: <code>${dep.id}</code>\n💰 ᴛᴏᴛᴀʟ: <b>ʀᴘ ${dep.nominal.toLocaleString()}</b>\n⌛ ꜱᴛᴀᴛᴜꜱ: ᴘᴇɴᴅɪɴɢ\n\nꜱɪʟᴀʜᴋᴀɴ ꜱᴄᴀɴ ǫʀɪs ᴅɪ ᴀᴛᴀꜱ. ʙᴏᴛ ᴀᴋᴀɴ ᴏᴛᴏᴍᴀᴛɪꜱ ᴍᴇᴍʙᴇʀɪ ᴀᴋꜱᴇꜱ ꜱᴇᴛᴇʟᴀʜ ᴘᴇᴍʙᴀʏᴀʀᴀɴ ʙᴇʀʜᴀꜱɪʟ.</blockquote>`,
-                    parse_mode: 'HTML',
-                    reply_markup: { inline_keyboard: [[{ text: "❌ ʙᴀᴛᴀʟᴋᴀɴ", callback_data: "start_back" }]] }
-                });
+    try {
+        const reff_id = `PREM-${Date.now()}`;
+        const res = await axios.post(
+            'https://atlantich2h.com/deposit/create',
+            `api_key=${SETTINGS.atlanticKey}&reff_id=${reff_id}&nominal=${SETTINGS.price}&type=ewallet&metode=qris`,
+            { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+        );
 
-                let check = setInterval(async () => {
-                    const st = await axios.post('https://atlantich2h.com/deposit/status', `api_key=${SETTINGS.atlanticKey}&id=${dep.id}`, { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
-                    if (st.data.data.status === 'success') {
-                        clearInterval(check);
-                        db.premium.push(userId);
-                        bot.sendMessage(chatId, "<blockquote>✅ <b>ᴘᴇᴍʙᴀʏᴀʀᴀɴ ʙᴇʀʜᴀꜱɪʟ</b>\n\nꜱᴇʟᴀᴍᴀᴛ! ᴀɴᴅᴀ ꜱᴇᴋᴀʀᴀɴɢ ᴀᴅᴀʟᴀʜ ᴜꜱᴇʀ ᴘʀᴇᴍɪᴜᴍ. ꜱɪʟᴀʜᴋᴀɴ ɢᴜɴᴀᴋᴀɴ ꜰɪᴛᴜʀ ᴄʀᴇᴀᴛᴇ ꜱᴜʙᴅᴏᴍᴀɪɴ.</blockquote>", { parse_mode: 'HTML' });
-                    }
-                }, 2000);
-                setTimeout(() => clearInterval(check), 600000);
+        if (!res.data.status) {
+            return bot.sendMessage(chatId, "❌ ɢᴀɢᴀʟ ᴍᴇᴍʙᴜᴀᴛ ᴘᴇᴍʙᴀʏᴀʀᴀɴ.");
+        }
+
+        const dep = res.data.data;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(dep.qr_string || dep.qr_image)}`;
+
+        try { await bot.deleteMessage(chatId, msgId); } catch {}
+
+        await bot.sendPhoto(chatId, qrUrl, {
+            caption:
+`<blockquote>💳 <b>ᴘᴇᴍʙᴀʏᴀʀᴀɴ ǫʀɪs ᴘʀᴇᴍɪᴜᴍ</b>
+
+🆔 <b>ɪᴅ ᴅᴇᴘᴏꜱɪᴛ</b> : <code>${dep.id}</code>
+💰 <bɴᴏᴍɪɴᴀʟ</b> : <b>ʀᴘ ${Number(dep.nominal).toLocaleString()}</b>
+📦 <bᴘᴀᴋᴇᴛ</b> : ᴘʀᴇᴍɪᴜᴍ ᴜꜱᴇʀ
+⌛ <bꜱᴛᴀᴛᴜꜱ</b> : ᴘᴇɴᴅɪɴɢ
+🕒 <bᴡᴀᴋᴛᴜ</b> : ${new Date().toLocaleString('id-ID')}
+
+ꜱɪʟᴀʜᴋᴀɴ ꜱᴄᴀɴ ǫʀɪs ᴅɪ ᴀᴛᴀꜱ.
+ʙᴏᴛ ᴀᴋᴀɴ ᴏᴛᴏᴍᴀᴛɪꜱ ᴍᴇɴɢᴀᴋᴛɪꜰᴋᴀɴ ᴘʀᴇᴍɪᴜᴍ ꜱᴇᴛᴇʟᴀʜ ᴘᴇᴍʙᴀʏᴀʀᴀɴ ʙᴇʀʜᴀꜱɪʟ.</blockquote>`,
+            parse_mode: 'HTML',
+            reply_markup: {
+                inline_keyboard: [[
+                    { text: "❌ ʙᴀᴛᴀʟᴋᴀɴ", callback_data: "start_back" }
+                ]]
             }
-        } catch (e) { bot.sendMessage(chatId, "❌ ɢᴀɢᴀʟ ᴍᴇᴍʙᴜᴀᴛ ᴘᴇᴍʙᴀʏᴀʀᴀɴ. ᴄᴇᴋ ᴋᴏɴᴇᴋꜱɪ ᴀᴘɪ."); }
+        });
+
+        let instantCalled = false;
+
+        let check = setInterval(async () => {
+            try {
+                const st = await axios.post(
+                    'https://atlantich2h.com/deposit/status',
+                    `api_key=${SETTINGS.atlanticKey}&id=${dep.id}`,
+                    { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+                );
+
+                if (!st.data.status) return;
+
+                const payStatus = st.data.data.status;
+
+                // ===== SUCCESS =====
+                if (payStatus === 'success') {
+                    clearInterval(check);
+
+                    if (!db.premium.includes(userId)) {
+                        db.premium.push(userId);
+                    }
+
+                    return bot.sendMessage(
+                        chatId,
+`<blockquote>✅ <b>ᴘᴇᴍʙᴀʏᴀʀᴀɴ ʙᴇʀʜᴀꜱɪʟ</b>
+
+ᴀᴋꜱᴇꜱ ᴘʀᴇᴍɪᴜᴍ ᴛᴇʟᴀʜ ᴀᴋᴛɪꜰ 🎉
+ꜱɪʟᴀʜᴋᴀɴ ɢᴜɴᴀᴋᴀɴ ꜰɪᴛᴜʀ <b>ᴄʀᴇᴀᴛᴇ ꜱᴜʙᴅᴏᴍᴀɪɴ</b>.</blockquote>`,
+                        { parse_mode: 'HTML' }
+                    );
+                }
+
+                // ===== PROCESSING → INSTANT =====
+                if (payStatus === 'processing' && !instantCalled) {
+                    instantCalled = true;
+
+                    await axios.post(
+                        'https://atlantich2h.com/deposit/instant',
+                        `api_key=${SETTINGS.atlanticKey}&id=${dep.id}&action=true`,
+                        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+                    );
+
+                    console.log("Instant Triggered:", dep.id);
+                }
+
+            } catch (err) {
+                console.log("Check Error:", err.message);
+            }
+        }, 3000);
+
+        // STOP AUTO CHECK 10 MENIT
+        setTimeout(() => clearInterval(check), 600000);
+
+    } catch (e) {
+        bot.sendMessage(chatId, "❌ ɢᴀɢᴀʟ ᴍᴇᴍʙᴜᴀᴛ ᴘᴇᴍʙᴀʏᴀʀᴀɴ. ᴄᴇᴋ ᴋᴏɴᴇᴋꜱɪ ᴀᴘɪ.");
     }
+}
 
     if (data.startsWith("exec_subdo_")) {
         const [_, index, host, ip] = data.split("|");
