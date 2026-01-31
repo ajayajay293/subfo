@@ -11,7 +11,7 @@ const SETTINGS = {
     dev: "NaelDev",
     atlanticKey: "cIr6yFSfNiCtzfOw50IIb8xvviGlG4U9o7wLe60Pvrz9os0Ff0ARoAMKdNj7YyqVYi25YtfQoyGVlPo8ce3wAuawklZJlqJF6mmN",
     price: 5500,
-    channels: ["@OrderOTP", "@FajarGanteng", "@zCekID"]
+    channels: ["@Panelstorez", "@FajarGanteng", "@zCekID"]
 };
 
 // --- DATABASE INTERNAL ---
@@ -45,19 +45,23 @@ const getMainMenu = (userId) => ({
 });
 
 // --- CORE FUNCTIONS ---
-async function checkSub(msg) {
+async function checkSub(userId) {
     for (const channel of SETTINGS.channels) {
         try {
-            const chat = await bot.getChatMember(channel, msg.from.id);
-            if (['left', 'kicked'].includes(chat.status)) return false;
-        } catch { return false; }
+            const chat = await bot.getChatMember(channel, userId);
+            if (!['member', 'administrator', 'creator'].includes(chat.status)) {
+                return false;
+            }
+        } catch {
+            return false;
+        }
     }
     return true;
 }
 
 // --- COMMANDS ---
 bot.onText(/\/start/, async (msg) => {
-    const isSub = await checkSub(msg);
+    const isSub = await checkSub(msg.from.id);
     if (!isSub) {
         return bot.sendMessage(msg.chat.id, `<blockquote>⚠️ <b>ᴀᴋꜱᴇꜱ ᴅɪᴛᴏʟᴀᴋ</b>\n\nꜱɪʟᴀʜᴋᴀɴ ʙᴇʀɢᴀʙᴜɴɢ ᴋᴇ ᴄʜᴀɴɴᴇʟ ꜱᴘᴏɴꜱᴏʀ ᴜɴᴛᴜᴋ ᴍᴇɴɢɢᴜɴᴀᴋᴀɴ ʙᴏᴛ:\n\n${SETTINGS.channels.join('\n')}</blockquote>`, {
             parse_mode: 'HTML',
@@ -88,11 +92,38 @@ bot.on('callback_query', async (query) => {
         return bot.sendMessage(chatId, teks, { parse_mode: 'HTML', reply_markup: kb });
     };
 
+    // ===== HARD LOCK JOIN (GLOBAL GATE) =====
+    const isSub = await checkSub(userId);
+    if (!isSub && data !== "start_back") {
+        return bot.answerCallbackQuery(query.id, {
+            text: "⚠️ Join semua channel dulu!",
+            show_alert: true
+        });
+    }
+
+    // ===== START_BACK =====
     if (data === "start_back") {
+        if (!isSub) {
+            return bot.editMessageText(
+                `<blockquote>⚠️ <b>Akses Ditolak</b>\n\nJoin dulu:\n${SETTINGS.channels.join('\n')}</blockquote>`,
+                {
+                    chat_id: chatId,
+                    message_id: msgId,
+                    parse_mode: 'HTML',
+                    reply_markup: {
+                        inline_keyboard: [[
+                            { text: "✅ Cek Lagi", callback_data: "start_back" }
+                        ]]
+                    }
+                }
+            );
+        }
+
         const teks = `<blockquote>✨ <b>ᴍᴀɪɴ ᴍᴇɴᴜ ꜱᴜʙᴅᴏ ʙᴏᴛ</b> ✨\n\nꜱɪʟᴀʜᴋᴀɴ ᴘɪʟɪʜ ʟᴀʏᴀɴᴀɴ ʏᴀɴɢ ᴀɴᴅᴀ ɪɴɢɪɴᴋᴀɴ:</blockquote>`;
         return refreshMenu(teks, getMainMenu(userId));
     }
 
+    // --- bawahnya lanjut menu lain ---
     if (data === "my_profile") {
         const isPrem = db.premium.includes(userId);
         const teks = `<blockquote>👤 <b>ᴜꜱᴇʀ ᴘʀᴏꜰɪʟᴇ</b>\n\n📝 ɴᴀᴍᴇ: <b>${query.from.first_name}</b>\n🆔 ɪᴅ: <code>${userId}</code>\n🌟 ꜱᴛᴀᴛᴜꜱ: <b>${isPrem ? "ᴘʀᴇᴍɪᴜᴍ ✨" : "ꜰʀᴇᴇ ᴜꜱᴇʀ"}</b>\n\nᴛᴇʀɪᴍᴀ ᴋᴀꜱɪʜ ᴛᴇʟᴀʜ ᴍᴇɴɢɢᴜɴᴀᴋᴀɴ ʟᴀʏᴀɴᴀɴ ᴋᴀᴍɪ!</blockquote>`;
@@ -146,7 +177,7 @@ bot.on('callback_query', async (query) => {
                         db.premium.push(userId);
                         bot.sendMessage(chatId, "<blockquote>✅ <b>ᴘᴇᴍʙᴀʏᴀʀᴀɴ ʙᴇʀʜᴀꜱɪʟ</b>\n\nꜱᴇʟᴀᴍᴀᴛ! ᴀɴᴅᴀ ꜱᴇᴋᴀʀᴀɴɢ ᴀᴅᴀʟᴀʜ ᴜꜱᴇʀ ᴘʀᴇᴍɪᴜᴍ. ꜱɪʟᴀʜᴋᴀɴ ɢᴜɴᴀᴋᴀɴ ꜰɪᴛᴜʀ ᴄʀᴇᴀᴛᴇ ꜱᴜʙᴅᴏᴍᴀɪɴ.</blockquote>", { parse_mode: 'HTML' });
                     }
-                }, 5000);
+                }, 2000);
                 setTimeout(() => clearInterval(check), 600000);
             }
         } catch (e) { bot.sendMessage(chatId, "❌ ɢᴀɢᴀʟ ᴍᴇᴍʙᴜᴀᴛ ᴘᴇᴍʙᴀʏᴀʀᴀɴ. ᴄᴇᴋ ᴋᴏɴᴇᴋꜱɪ ᴀᴘɪ."); }
@@ -190,6 +221,11 @@ bot.on('callback_query', async (query) => {
 // --- INPUT HANDLER ---
 bot.on('message', async (msg) => {
     if (!msg.text || msg.text.startsWith('/')) return;
+
+    // HARD LOCK JOIN TEXT
+    const isSub = await checkSub(msg.from.id);
+    if (!isSub) return;
+
     const chatId = msg.chat.id;
     const state = userStates.get(chatId);
 
