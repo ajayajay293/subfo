@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 
 // --- KONFIGURASI ---
-const token = '8302488902:AAHaD_W255L-Y5miqv3ogE-SpyY4EpUxXtw';
+const token = '8302488902:AAGCOhFosHzk1oToCT43zulDJjRCFptq6hY';
 const bot = new TelegramBot(token, { polling: true });
 
 const SETTINGS = {
@@ -12,7 +12,7 @@ const SETTINGS = {
     dev: "NaelDev",
     atlanticKey: "cIr6yFSfNiCtzfOw50IIb8xvviGlG4U9o7wLe60Pvrz9os0Ff0ARoAMKdNj7YyqVYi25YtfQoyGVlPo8ce3wAuawklZJlqJF6mmN",
     price: 5500, // Harga 5k + Admin 500
-    channels: ["@OrderOTP", "@FajarGanteng", "@zCekID"]
+    channels: ["@PanelStorez", "@FajarGanteng", "@zCekID"]
 };
 
 // --- DATABASE INTERNAL (TANPA GITHUB) ---
