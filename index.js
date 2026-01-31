@@ -14,7 +14,7 @@ const SETTINGS = {
     githubToken: "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",
     githubRaw: "https://raw.githubusercontent.com/ajayajay293/database/main/database.json",
     price: 5500, // Harga 5k + Admin 500
-    channels: ["@OrderOTP", "@FajarGanteng", "@zCekID"]
+    channels: ["@PanelStoreZ", "@FajarGanteng", "@zCekID"]
 };
 
 global.subdomain = { 
