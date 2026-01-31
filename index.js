@@ -12,7 +12,7 @@ const SETTINGS = {
     dev: "NaelDev",
     atlanticKey: "cIr6yFSfNiCtzfOw50IIb8xvviGlG4U9o7wLe60Pvrz9os0Ff0ARoAMKdNj7YyqVYi25YtfQoyGVlPo8ce3wAuawklZJlqJF6mmN",
     githubToken: "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",
-    githubRaw: "https://api.github.com/repos/ajayajay293/database/contents/database.json",
+    githubRaw: "https://raw.githubusercontent.com/ajayajay293/database/main/database.json",
     price: 5500, // Harga 5k + Admin 500
     channels: ["@OrderOTP", "@FajarGanteng", "@zCekID"]
 };
