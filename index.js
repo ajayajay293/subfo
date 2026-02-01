@@ -11,7 +11,7 @@ const SETTINGS = {
     dev: "IsJackA",
     atlanticKey: "cIr6yFSfNiCtzfOw50IIb8xvviGlG4U9o7wLe60Pvrz9os0Ff0ARoAMKdNj7YyqVYi25YtfQoyGVlPo8ce3wAuawklZJlqJF6mmN",
     price: 5500,
-    channels: ["@Panelstorez", "@FajarGanteng", "@zCekID"]
+    channels: ["@OrderOTP", "@FajarGanteng", "@zCekID"]
 };
 
 // --- DATABASE INTERNAL ---
